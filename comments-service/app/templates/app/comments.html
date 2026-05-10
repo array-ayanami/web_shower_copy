@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Комментарии | Душевые общежития</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 700px; margin: 0 auto; }
+        h1 { text-align: center; color: #333; margin-bottom: 1.5rem; }
+        .auth-warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; text-align: center; }
+        .auth-warning a { color: #007bff; }
+        .comment-form { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .comment-form textarea { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; resize: vertical; min-height: 80px; margin-bottom: 0.75rem; }
+        .comment-form button { padding: 0.75rem 1.5rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        .comment-form button:hover { background: #0056b3; }
+        .comments-list { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .comment { padding: 1rem; border-bottom: 1px solid #eee; animation: fadeIn 0.3s ease; }
+        .comment:last-child { border-bottom: none; }
+        .comment.new { background: #e8f4fd; }
+        .comment-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.875rem; color: #666; }
+        .comment-author { font-weight: 600; color: #333; }
+        .comment-text { color: #444; line-height: 1.5; }
+        .live-indicator { display: inline-block; width: 8px; height: 8px; background: #28a745; border-radius: 50%; margin-right: 0.5rem; animation: pulse 2s infinite; }
+        .status-bar { padding: 0.75rem 1rem; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; align-items: center; font-size: 0.875rem; color: #666; }
+        .hidden { display: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Комментарии</h1>
+        
+        <div id="auth-warning" class="auth-warning">
+            Для добавления комментариев необходимо <a href="/auth/">войти в систему</a>
+        </div>
+        
+        <div id="comment-section" class="hidden">
+            <form class="comment-form" id="comment-form">
+                <textarea id="comment-text" placeholder="Напишите комментарий..." maxlength="1000" required></textarea>
+                <button type="submit">Отправить</button>
+            </form>
+        </div>
+        
+        <div class="comments-list">
+            <div class="status-bar">
+                <span class="live-indicator"></span>
+                <span>Онлайн-трансляция комментариев</span>
+            </div>
+            <div id="comments-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/comments';
+        let accessToken = null;
+        let eventSource = null;
+        let lastCommentId = 0;
+        
+        async function checkAuth() {
+            const savedToken = localStorage.getItem('access_token');
+            if (!savedToken) {
+                document.getElementById('auth-warning').classList.remove('hidden');
+                document.getElementById('comment-section').classList.add('hidden');
+                return false;
+            }
+            
+            try {
+                const response = await fetch('/auth/me/', {
+                    headers: { 'Authorization': `Bearer ${savedToken}` }
+                });
+                if (response.ok) {
+                    accessToken = savedToken;
+                    document.getElementById('auth-warning').classList.add('hidden');
+                    document.getElementById('comment-section').classList.remove('hidden');
+                    return true;
+                }
+            } catch (err) {
+                console.error('Ошибка проверки токена:', err);
+            }
+            
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            document.getElementById('auth-warning').classList.remove('hidden');
+            document.getElementById('comment-section').classList.add('hidden');
+            return false;
+        }
+        
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                const container = document.getElementById('comments-container');
+                container.innerHTML = '';
+                
+                if (data.comments.length === 0) {
+                    container.innerHTML = '<p style="padding: 2rem; text-align: center; color: #666;">Пока нет комментариев. Будьте первыми!</p>';
+                } else {
+                    data.comments.forEach(c => {
+                        container.appendChild(createCommentElement(c, false));
+                        lastCommentId = Math.max(lastCommentId, c.id);
+                    });
+                }
+                
+                startSSE();
+            } catch (err) {
+                console.error('Ошибка загрузки комментариев:', err);
+            }
+        }
+        
+        function createCommentElement(comment, isNew) {
+            const div = document.createElement('div');
+            div.className = `comment${isNew ? ' new' : ''}`;
+            div.id = `comment-${comment.id}`;
+            
+            const date = new Date(comment.created_at).toLocaleString('ru-RU', {
+                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+            });
+            
+            div.innerHTML = `
+                <div class="comment-header">
+                    <span class="comment-author">${escapeHtml(comment.author)}</span>
+                    <span>${date}</span>
+                </div>
+                <div class="comment-text">${escapeHtml(comment.text)}</div>
+            `;
+            
+            return div;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function startSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource(`${API_BASE}/stream/?last_id=${lastCommentId}`);
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    const comment = JSON.parse(event.data);
+                    const container = document.getElementById('comments-container');
+                    
+                    // Удаляем сообщение "нет комментариев" если есть
+                    const emptyMsg = container.querySelector('p');
+                    if (emptyMsg && emptyMsg.textContent.includes('Пока нет')) {
+                        emptyMsg.remove();
+                    }
+                    
+                    const commentEl = createCommentElement(comment, true);
+                    container.insertBefore(commentEl, container.firstChild);
+                    
+                    lastCommentId = Math.max(lastCommentId, comment.id);
+                    
+                    // Ограничиваем количество комментариев в DOM
+                    while (container.children.length > 100) {
+                        container.removeChild(container.lastChild);
+                    }
+                } catch (err) {
+                    console.error('Ошибка обработки SSE:', err);
+                }
+            };
+            
+            eventSource.onerror = () => {
+                console.log('Поток SSE закрыт, переподключение...');
+                setTimeout(() => startSSE(), 3000);
+            };
+        }
+        
+        document.getElementById('comment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const textarea = document.getElementById('comment-text');
+            const text = textarea.value.trim();
+            
+            if (!text) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({ text })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    textarea.value = '';
+                    // Комментарий появится через SSE
+                } else {
+                    alert(data.error || 'Ошибка отправки комментария');
+                }
+            } catch (err) {
+                console.error('Ошибка отправки:', err);
+                alert('Ошибка соединения с сервером');
+            }
+        });
+        
+        window.addEventListener('load', async () => {
+            const isAuth = await checkAuth();
+            loadComments();
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,9 +1,10 @@
 import json
 import re
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.shortcuts import render
 from .jwt_utils import generate_tokens, decode_token
 
 
@@ -57,6 +58,13 @@ def register(request):
         "refresh": refresh,
         "user": {"id": user.id, "name": user.first_name, "email": user.email},
     }, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def login_page(request):
+    """GET /auth/login-page/ — страница входа с формой."""
+    return render(request, 'app/login.html')
 
 
 @csrf_exempt
