@@ -1,3 +1,44 @@
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 # Compiled and build artifacts
 *.pyc
 __pycache__/
@@ -37,6 +78,30 @@ target/
 .DS_Store
 Thumbs.db
 
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyTest
+.pytest_cache/
+
+# Docker
+.dockerenv
+
+# Git
+.git/
+```
 # Coverage
 coverage/
 htmlcov/
