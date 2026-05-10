@@ -1,9 +1,10 @@
 import json
 import requests as http_requests
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.shortcuts import render
 from django.utils import timezone
 from .models import FeedbackMessage
 
@@ -13,6 +14,13 @@ SUBJECT_LABELS = {
     "suggestion": "Предложение",
     "other":      "Другое",
 }
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def feedback_page(request):
+    """GET /feedback/ — страница обратной связи."""
+    return render(request, 'app/feedback.html')
 
 
 @csrf_exempt

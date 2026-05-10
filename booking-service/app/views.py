@@ -1,14 +1,21 @@
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.shortcuts import get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from .models import Booking
 from .jwt_utils import require_auth, get_jwt_payload
 
 SLOT_TIMES = [
     f"{h:02d}:{m:02d}" for h in range(8, 22) for m in (0, 30)
 ]
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def booking_page(request):
+    """GET /booking/ — страница бронирования."""
+    return render(request, 'app/booking.html')
 
 
 @csrf_exempt

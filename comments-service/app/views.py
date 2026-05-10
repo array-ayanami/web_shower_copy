@@ -1,11 +1,19 @@
 import json
 import time
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import JsonResponse, StreamingHttpResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.shortcuts import render
 from django.db import close_old_connections
 from .models import Comment
 from .jwt_utils import require_auth
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def comments_page(request):
+    """GET /comments/ — страница комментариев."""
+    return render(request, 'app/comments.html')
 
 
 @csrf_exempt

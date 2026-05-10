@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование душевых | Общежитие</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #333; margin-bottom: 1rem; }
+        .auth-warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; text-align: center; }
+        .auth-warning a { color: #007bff; }
+        .date-selector { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; justify-content: center; }
+        .date-selector input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        .date-selector button { padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; }
+        .slot { padding: 0.75rem; border-radius: 4px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .slot.free { background: #d4edda; border-color: #28a745; color: #155724; }
+        .slot.free:hover { background: #c3e6cb; }
+        .slot.taken { background: #f8d7da; border-color: #dc3545; color: #721c24; cursor: not-allowed; }
+        .slot.mine { background: #cce5ff; border-color: #007bff; color: #004085; }
+        .slot.mine .cancel-btn { display: inline-block; margin-top: 0.25rem; padding: 0.25rem 0.5rem; background: #dc3545; color: white; border: none; border-radius: 3px; font-size: 0.75rem; cursor: pointer; }
+        .my-bookings { margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .my-bookings h2 { margin-bottom: 1rem; color: #333; }
+        .booking-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid #eee; }
+        .booking-item:last-child { border-bottom: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚿 Бронирование душевых</h1>
+        
+        <div id="auth-warning" class="auth-warning">
+            Для бронирования необходимо <a href="/auth/">войти в систему</a>
+        </div>
+        
+        <div id="booking-section" class="hidden">
+            <div class="date-selector">
+                <input type="date" id="date-input">
+                <button onclick="loadSlots()">Показать слоты</button>
+            </div>
+            
+            <div id="slots-container" class="slots-grid"></div>
+            
+            <div class="my-bookings">
+                <h2>Мои бронирования</h2>
+                <div id="my-bookings-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/booking';
+        let accessToken = null;
+        let currentUser = null;
+        
+        // Установка сегодняшней даты
+        document.getElementById('date-input').valueAsDate = new Date();
+        
+        async function checkAuth() {
+            const savedToken = localStorage.getItem('access_token');
+            if (!savedToken) {
+                document.getElementById('auth-warning').classList.remove('hidden');
+                document.getElementById('booking-section').classList.add('hidden');
+                return false;
+            }
+            
+            try {
+                const response = await fetch('/auth/me/', {
+                    headers: { 'Authorization': `Bearer ${savedToken}` }
+                });
+                if (response.ok) {
+                    currentUser = await response.json();
+                    accessToken = savedToken;
+                    document.getElementById('auth-warning').classList.add('hidden');
+                    document.getElementById('booking-section').classList.remove('hidden');
+                    loadSlots();
+                    loadMyBookings();
+                    return true;
+                }
+            } catch (err) {
+                console.error('Ошибка проверки токена:', err);
+            }
+            
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            document.getElementById('auth-warning').classList.remove('hidden');
+            document.getElementById('booking-section').classList.add('hidden');
+            return false;
+        }
+        
+        async function loadSlots() {
+            const date = document.getElementById('date-input').value;
+            if (!date) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/slots/?date=${date}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('slots-container');
+                container.innerHTML = '';
+                
+                data.slots.forEach(slot => {
+                    const div = document.createElement('div');
+                    div.className = `slot ${slot.status}`;
+                    
+                    if (slot.status === 'free') {
+                        div.textContent = `${slot.time} — Свободно`;
+                        div.onclick = () => bookSlot(date, slot.time);
+                    } else if (slot.status === 'taken') {
+                        div.textContent = `${slot.time} — Занято`;
+                    } else if (slot.status === 'mine') {
+                        div.innerHTML = `${slot.time} — Ваша бронь<br><button class="cancel-btn" onclick="event.stopPropagation(); cancelBooking('${date}', '${slot.time}')">Отменить</button>`;
+                    }
+                    
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки слотов:', err);
+            }
+        }
+        
+        async function bookSlot(date, time) {
+            if (!confirm(`Забронировать на ${date} в ${time}?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/create/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({ date, time })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Бронь успешно создана!');
+                    loadSlots();
+                    loadMyBookings();
+                } else {
+                    alert(data.error || 'Ошибка создания брони');
+                }
+            } catch (err) {
+                console.error('Ошибка бронирования:', err);
+                alert('Ошибка соединения с сервером');
+            }
+        }
+        
+        async function loadMyBookings() {
+            try {
+                const response = await fetch(`${API_BASE}/my/`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const list = document.getElementById('my-bookings-list');
+                    
+                    if (data.bookings.length === 0) {
+                        list.innerHTML = '<p style="color: #666;">У вас пока нет бронирований</p>';
+                    } else {
+                        list.innerHTML = data.bookings.map(b => `
+                            <div class="booking-item">
+                                <span>📅 ${b.date} в ${b.time}</span>
+                                <button onclick="cancelBookingById(${b.id})" style="padding: 0.25rem 0.5rem; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Отменить</button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки бронирований:', err);
+            }
+        }
+        
+        async function cancelBookingById(id) {
+            if (!confirm('Отменить это бронирование?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/cancel/${id}/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (response.ok) {
+                    alert('Бронь отменена');
+                    loadSlots();
+                    loadMyBookings();
+                } else {
+                    alert('Ошибка отмены брони');
+                }
+            } catch (err) {
+                console.error('Ошибка отмены:', err);
+            }
+        }
+        
+        function cancelBooking(date, time) {
+            // Находим бронь по дате и времени
+            fetch(`${API_BASE}/my/`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            }).then(r => r.json()).then(data => {
+                const booking = data.bookings.find(b => b.date === date && b.time === time);
+                if (booking) cancelBookingById(booking.id);
+            });
+        }
+        
+        window.addEventListener('load', checkAuth);
+    </script>
+</body>
+</html>
