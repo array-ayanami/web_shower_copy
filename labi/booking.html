@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Забронировать душевую | Общежитие</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap' rel='stylesheet'>
+</head>
+<body>
+
+<div class="container fade-in">
+    <nav class="navbar">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-btn">☰</label>
+        <ul class="menu">
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="booking.html">Забронировать</a></li>
+            <li><a href="mybookings.html">Мои брони</a></li>
+            <li><a href="info.html">Информация</a></li>
+            <li><a href="feedback.html">Обратная связь</a></li>
+        </ul>
+        <div class="dropdown">
+            <button class="dropbtn" id="profileBtn">Пользователь</button>
+            <div class="dropdown-content" id="dropdownMenu">
+                <a href="#" onclick="showProfile()">Профиль</a>
+                <a href="#" onclick="logout()">Выйти</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="main-header">
+        <img src="C:\Users\8241574\Downloads\labi\image\meit_logo.jpg" class="logo">
+        <h1>Забронировать душевую</h1>
+    </header>
+
+    <section>
+        <div id="authMessage" style="color: red;"></div>
+        <form id="bookingForm" style="display:none;">
+            <p><label>Дата: <input type="date" required></label></p>
+            <p><label>Время: <input type="time" required></label></p>
+            <p><button type="submit">Забронировать</button></p>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Общежитие. Все права защищены.</p>
+    </footer>
+</div>
+
+<script src="scripts.js"></script>
+
+</body>
+</html>

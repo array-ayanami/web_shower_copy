@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[oc]
+*.pyo
+build/
+dist/
+wheels/
+*.egg-info
+.venv/
+venv/
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# Environment variables (никогда не коммитить!)
+.env
+*/.env
+
+# Docker
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Replit internal
+.replit
+replit.nix
+.upm/
+.cache/
+.pythonlibs/
+uv.lock
+zipFile.zip

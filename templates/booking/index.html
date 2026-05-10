@@ -1,0 +1,24 @@
+{% extends 'booking/base.html' %}
+{% load static %}
+
+{% block title %}Главная | Общежитие{% endblock %}
+{% block header %}Бронирование душевых в общежитии{% endblock %}
+
+{% block content %}
+<h2>Что мы предлагаем?</h2>
+<p>Удобный и быстрый способ <strong>забронировать душевую</strong> в общежитии.</p>
+<p>Сэкономьте время и избегайте очередей!</p>
+
+<h3>Преимущества:</h3>
+<ul>
+    <li>Онлайн-бронирование</li>
+    <li>Уведомления о бронировании</li>
+    <li>Удобное расписание</li>
+</ul>
+
+<div class="video-container">
+    <video controls width="100%">
+        <source src="{% static 'booking/images/raindrops_on_a_window.mp4' %}" type="video/mp4">
+    </video>
+</div>
+{% endblock %}

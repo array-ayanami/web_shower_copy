@@ -1,0 +1,34 @@
+{% extends 'booking/base.html' %}
+
+{% block title %}Обратная связь | Общежитие{% endblock %}
+{% block header %}Обратная связь{% endblock %}
+
+{% block content %}
+<h2>Отправить сообщение</h2>
+<form method="post" action="{% url 'feedback' %}">
+    {% csrf_token %}
+    <label>
+        Ваше имя:
+        <input type="text" name="name" value="{{ values.name|default:'' }}" required>
+    </label>
+    <label>
+        Email:
+        <input type="email" name="email" value="{{ values.email|default:'' }}" required>
+    </label>
+    <label>
+        Тема:
+        <select name="subject" required>
+            <option value="">Выберите тему</option>
+            <option value="booking" {% if values.subject == 'booking' %}selected{% endif %}>Бронирование</option>
+            <option value="technical" {% if values.subject == 'technical' %}selected{% endif %}>Техническая проблема</option>
+            <option value="suggestion" {% if values.subject == 'suggestion' %}selected{% endif %}>Предложение</option>
+            <option value="other" {% if values.subject == 'other' %}selected{% endif %}>Другое</option>
+        </select>
+    </label>
+    <label>
+        Сообщение:
+        <textarea name="message" rows="5" required>{{ values.message|default:'' }}</textarea>
+    </label>
+    <button type="submit">Отправить</button>
+</form>
+{% endblock %}

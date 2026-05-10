@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | Общежитие</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap' rel='stylesheet'>
+</head>
+<body>
+
+<div class="container fade-in">
+    <nav class="navbar">
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-btn">☰</label>
+        <ul class="menu">
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="booking.html">Забронировать</a></li>
+            <li><a href="mybookings.html">Мои брони</a></li>
+            <li><a href="info.html">Информация</a></li>
+            <li><a href="feedback.html">Обратная связь</a></li>
+        </ul>
+        <div class="dropdown">
+            <button class="dropbtn" id="profileBtn">Пользователь</button>
+            <div class="dropdown-content" id="dropdownMenu">
+                <a href="#" onclick="showProfile()">Профиль</a>
+                <a href="#" onclick="logout()">Выйти</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="main-header">
+        <img src="C:\Users\8241574\Downloads\labi\image\meit_logo.jpg" class="logo">
+        <h1>Вход в систему</h1>
+    </header>
+
+    <section>
+        <h2>Авторизация</h2>
+        <form id="loginForm">
+            <label>Email: <input type="email" required></label>
+            <label>Пароль: <input type="password" minlength="6" required></label>
+            <button type="submit">Войти</button>
+        </form>
+        <p>Еще не зарегистрированы? <a href="register.html">Зарегистрируйтесь</a>.</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Общежитие. Все права защищены.</p>
+    </footer>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = document.querySelector('#loginForm input[type="email"]').value;
+            const password = document.querySelector('#loginForm input[type="password"]').value;
+
+            if (!email || !password) {
+                alert("Заполните все поля.");
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users.find(u => u.email === email && u.password === password);
+
+            if (user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                document.getElementById('profileBtn').textContent = user.name;
+                alert("Вход выполнен успешно!");
+                window.location.href = 'index.html';
+            } else {
+                alert("Неверный email или пароль.");
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

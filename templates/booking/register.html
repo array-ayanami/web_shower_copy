@@ -1,0 +1,28 @@
+{% extends 'booking/base.html' %}
+
+{% block title %}Регистрация | Общежитие{% endblock %}
+{% block header %}Регистрация нового пользователя{% endblock %}
+
+{% block content %}
+<h2>Создайте свой аккаунт</h2>
+<form method="post" action="{% url 'register' %}" novalidate>
+    {% csrf_token %}
+    <label>
+        Имя:
+        <input type="text" name="name" value="{{ values.name|default:'' }}">
+        {% if errors.name %}<div class="error-message">{{ errors.name }}</div>{% endif %}
+    </label>
+    <label>
+        Email:
+        <input type="text" name="email" value="{{ values.email|default:'' }}">
+        {% if errors.email %}<div class="error-message">{{ errors.email }}</div>{% endif %}
+    </label>
+    <label>
+        Пароль:
+        <input type="password" name="password">
+        {% if errors.password %}<div class="error-message">{{ errors.password }}</div>{% endif %}
+    </label>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+<p>Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>.</p>
+{% endblock %}

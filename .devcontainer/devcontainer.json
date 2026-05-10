@@ -1,0 +1,41 @@
+{
+  "name": "Shower Booking — Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "dockerDashComposeVersion": "v2"
+    }
+  },
+
+  "forwardPorts": [5000, 80, 5432],
+  "portsAttributes": {
+    "5000": { "label": "Django Dev Server",  "onAutoForward": "openBrowser" },
+    "80":   { "label": "Nginx (full stack)",  "onAutoForward": "notify" },
+    "5432": { "label": "PostgreSQL",          "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "pip install -r requirements.txt && python manage.py migrate",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-azuretools.vscode-docker",
+        "GitHub.vscode-pull-request-github",
+        "ms-python.flake8"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": { "editor.defaultFormatter": "ms-python.python" }
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "DJANGO_SETTINGS_MODULE": "shower_booking.settings"
+  }
+}

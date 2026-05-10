@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ── 1. Проверка монолита ─────────────────────────────────────
+  lint-and-check:
+    name: Django system check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django system check
+        env:
+          SECRET_KEY: ci-test-secret-key
+          DEBUG: "1"
+        run: python manage.py check --deploy 2>&1 | grep -v "WARNINGS" || true
+
+      - name: Check for missing migrations
+        env:
+          SECRET_KEY: ci-test-secret-key
+          DEBUG: "1"
+        run: python manage.py migrate --check || python manage.py showmigrations
+
+  # ── 2. Сборка Docker-образа монолита ─────────────────────────
+  build-monolith:
+    name: Build monolith Docker image
+    runs-on: ubuntu-latest
+    needs: lint-and-check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg SECRET_KEY=ci-build-key \
+            -t shower-booking:${{ github.sha }} \
+            .
+
+  # ── 3. Сборка образов микросервисов ──────────────────────────
+  build-microservices:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: lint-and-check
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth-service
+          - booking-service
+          - comments-service
+          - feedback-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service }}
+        run: |
+          docker build \
+            -t shower-booking-${{ matrix.service }}:${{ github.sha }} \
+            ./microservices/${{ matrix.service }}

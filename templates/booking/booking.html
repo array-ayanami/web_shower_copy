@@ -1,0 +1,206 @@
+{% extends 'booking/base.html' %}
+
+{% block title %}Забронировать душевую | Общежитие{% endblock %}
+{% block header %}Забронировать душевую{% endblock %}
+
+{% block content %}
+<p>Выберите дату, затем нажмите на свободный слот — бронь сохранится мгновенно.</p>
+
+<div class="date-picker">
+    <label for="bookingDate"><strong>Дата:</strong></label>
+    <input type="date" id="bookingDate">
+</div>
+
+<div id="slotStatus" class="slot-status" aria-live="polite"></div>
+
+<div id="slotsGrid" class="slots-grid">
+    <p style="color:#888;">Сначала выберите дату.</p>
+</div>
+
+<script>
+(function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.cookie.split(';').map(s => s.trim()).find(s => s.startsWith('csrftoken='))?.split('=')[1];
+    const dateInput = document.getElementById('bookingDate');
+    const grid = document.getElementById('slotsGrid');
+    const statusBox = document.getElementById('slotStatus');
+    const bookUrl = "{% url 'booking_api' %}";
+    const slotsUrl = "{% url 'booked_slots_api' %}";
+
+    // По умолчанию — сегодня
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    dateInput.min = today;
+
+    // Генерируем слоты с 08:00 до 22:00 каждые 30 минут
+    function generateSlotTimes() {
+        const slots = [];
+        for (let h = 8; h < 22; h++) {
+            slots.push(`${String(h).padStart(2, '0')}:00`);
+            slots.push(`${String(h).padStart(2, '0')}:30`);
+        }
+        return slots;
+    }
+    const ALL_SLOTS = generateSlotTimes();
+
+    function showStatus(text, type) {
+        statusBox.textContent = text;
+        statusBox.className = 'slot-status ' + (type || '');
+        if (text) {
+            setTimeout(() => {
+                if (statusBox.textContent === text) {
+                    statusBox.textContent = '';
+                    statusBox.className = 'slot-status';
+                }
+            }, 2000);
+        }
+    }
+
+    async function loadSlots() {
+        const date = dateInput.value;
+        if (!date) return;
+        grid.innerHTML = '<p style="color:#888;">Загрузка...</p>';
+        try {
+            const res = await fetch(slotsUrl + '?date=' + encodeURIComponent(date));
+            const data = await res.json();
+            if (!data.success) {
+                grid.innerHTML = '<p style="color:#e74c3c;">' + (data.error || 'Ошибка') + '</p>';
+                return;
+            }
+            renderSlots(data.booked, data.mine);
+        } catch (err) {
+            grid.innerHTML = '<p style="color:#e74c3c;">Ошибка сети</p>';
+        }
+    }
+
+    function renderSlots(booked, mine) {
+        const bookedSet = new Set(booked);
+        const mineSet = new Set(mine);
+        grid.innerHTML = '';
+        ALL_SLOTS.forEach(time => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'slot-btn';
+            btn.textContent = time;
+            btn.dataset.time = time;
+            if (mineSet.has(time)) {
+                btn.classList.add('slot-mine');
+                btn.disabled = true;
+                btn.title = 'Забронировано вами';
+            } else if (bookedSet.has(time)) {
+                btn.classList.add('slot-taken');
+                btn.disabled = true;
+                btn.title = 'Уже занято';
+            } else {
+                btn.addEventListener('click', () => bookSlot(btn, time));
+            }
+            grid.appendChild(btn);
+        });
+    }
+
+    async function bookSlot(btn, time) {
+        const date = dateInput.value;
+        if (!date) return;
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.textContent = '...';
+        try {
+            const res = await fetch(bookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ date: date, time: time }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                btn.textContent = original;
+                btn.classList.add('slot-mine');
+                btn.title = 'Забронировано вами';
+                showStatus('Забронировано на ' + time + '!', 'success');
+            } else {
+                btn.textContent = original;
+                btn.disabled = false;
+                if (res.status === 409) {
+                    // слот успели занять — перерисуем
+                    showStatus(data.error || 'Слот уже занят', 'error');
+                    loadSlots();
+                } else {
+                    showStatus(data.error || 'Ошибка бронирования', 'error');
+                }
+            }
+        } catch (err) {
+            btn.textContent = original;
+            btn.disabled = false;
+            showStatus('Ошибка сети', 'error');
+        }
+    }
+
+    dateInput.addEventListener('change', loadSlots);
+    loadSlots();
+})();
+</script>
+{% csrf_token %}
+
+<style>
+.date-picker {
+    margin: 15px 0;
+}
+.date-picker input[type="date"] {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+.slot-status {
+    min-height: 28px;
+    padding: 6px 0;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+.slot-status.success { color: #27ae60; }
+.slot-status.error { color: #e74c3c; }
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+.slot-btn {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 1.05em;
+    font-weight: 500;
+    background: #ecf0f1;
+    color: #2c3e50;
+    border: 2px solid #bdc3c7;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.slot-btn:hover:not(:disabled) {
+    background: #d5dbdb;
+    border-color: #34495e;
+}
+.slot-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+.slot-btn.slot-mine {
+    background: #27ae60;
+    color: #fff;
+    border-color: #1e8449;
+    cursor: default;
+}
+.slot-btn.slot-taken {
+    background: #f5f5f5;
+    color: #aaa;
+    border-color: #ddd;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+</style>
+{% endblock %}
