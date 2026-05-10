@@ -27,6 +27,12 @@
     <div class="container">
         <h1>📬 Обратная связь</h1>
         
+        <div style="margin-bottom: 1rem; text-align: right;" id="user-nav">
+            <span id="nav-user-name" style="margin-right: 1rem; color: #666;"></span>
+            <a href="/auth/" style="margin-right: 0.5rem; color: #007bff;">🏠 Главная</a>
+            <a href="#" onclick="logout(); return false;" style="color: #dc3545;">Выйти</a>
+        </div>
+        
         <div class="form-container">
             <div class="info-box">
                 💡 Есть вопросы или предложения? Заполните форму ниже, и мы свяжемся с вами в ближайшее время.
@@ -71,6 +77,32 @@
     </div>
 
     <script>
+        // Проверка авторизации при загрузке
+        async function checkAuth() {
+            const savedToken = localStorage.getItem('access_token');
+            if (savedToken) {
+                try {
+                    const response = await fetch('/auth/me/', {
+                        headers: { 'Authorization': `Bearer ${savedToken}` }
+                    });
+                    if (response.ok) {
+                        const user = await response.json();
+                        document.getElementById('nav-user-name').textContent = user.name;
+                    }
+                } catch (err) {
+                    console.error('Ошибка проверки токена:', err);
+                }
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            location.href = '/auth/';
+        }
+        
+        window.addEventListener('load', checkAuth);
+        
         document.getElementById('feedback-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
