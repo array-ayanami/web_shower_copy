@@ -36,6 +36,12 @@
             Для бронирования необходимо <a href="/auth/">войти в систему</a>
         </div>
         
+        <div style="margin-bottom: 1rem; text-align: right;" id="user-nav" class="hidden">
+            <span id="nav-user-name" style="margin-right: 1rem; color: #666;"></span>
+            <a href="/auth/" style="margin-right: 0.5rem; color: #007bff;">🏠 Главная</a>
+            <a href="#" onclick="logout(); return false;" style="color: #dc3545;">Выйти</a>
+        </div>
+        
         <div id="booking-section" class="hidden">
             <div class="date-selector">
                 <input type="date" id="date-input">
@@ -64,6 +70,7 @@
             if (!savedToken) {
                 document.getElementById('auth-warning').classList.remove('hidden');
                 document.getElementById('booking-section').classList.add('hidden');
+                document.getElementById('user-nav').classList.add('hidden');
                 return false;
             }
             
@@ -76,6 +83,8 @@
                     accessToken = savedToken;
                     document.getElementById('auth-warning').classList.add('hidden');
                     document.getElementById('booking-section').classList.remove('hidden');
+                    document.getElementById('user-nav').classList.remove('hidden');
+                    document.getElementById('nav-user-name').textContent = currentUser.name;
                     loadSlots();
                     loadMyBookings();
                     return true;
@@ -88,7 +97,14 @@
             localStorage.removeItem('refresh_token');
             document.getElementById('auth-warning').classList.remove('hidden');
             document.getElementById('booking-section').classList.add('hidden');
+            document.getElementById('user-nav').classList.add('hidden');
             return false;
+        }
+        
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            location.href = '/auth/';
         }
         
         async function loadSlots() {

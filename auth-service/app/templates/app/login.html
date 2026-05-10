@@ -69,10 +69,19 @@
             <span id="switch-text">Нет аккаунта? <a href="#" data-tab="register">Зарегистрироваться</a></span>
         </div>
         
-        <div id="user-info" class="hidden" style="margin-top: 1rem; text-align: center;">
-            <p style="color: #28a745;">✓ Вы успешно вошли!</p>
-            <p id="user-name" style="font-weight: 600;"></p>
-            <p id="user-email" style="color: #666;"></p>
+        <div id="user-info" class="hidden" style="margin-top: 1rem;">
+            <nav style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="margin-bottom: 0.75rem; color: #333;">📱 Навигация</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <a href="/booking/" style="display: block; padding: 0.75rem; background: #007bff; color: white; text-align: center; border-radius: 4px; text-decoration: none;">🚿 Бронирование душевых</a>
+                    <a href="/comments/" style="display: block; padding: 0.75rem; background: #28a745; color: white; text-align: center; border-radius: 4px; text-decoration: none;">💬 Комментарии</a>
+                    <a href="/feedback/" style="display: block; padding: 0.75rem; background: #17a2b8; color: white; text-align: center; border-radius: 4px; text-decoration: none;">📬 Обратная связь</a>
+                </div>
+            </nav>
+            <p style="color: #28a745; text-align: center;">✓ Вы успешно вошли!</p>
+            <p id="user-name" style="font-weight: 600; text-align: center;"></p>
+            <p id="user-email" style="color: #666; text-align: center;"></p>
+            <button onclick="logout()" style="width: 100%; margin-top: 1rem; padding: 0.75rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Выйти</button>
         </div>
     </div>
 
@@ -184,6 +193,12 @@
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('user-name').textContent = user.name;
             document.getElementById('user-email').textContent = user.email;
+        }
+        
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            location.reload();
         }
         
         // Проверка сохранённого токена при загрузке
