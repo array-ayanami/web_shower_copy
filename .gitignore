@@ -1,41 +1,53 @@
-# Python
+# Compiled and build artifacts
+*.pyc
 __pycache__/
-*.py[oc]
-*.pyo
-build/
-dist/
-wheels/
-*.egg-info
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Dependencies
 .venv/
 venv/
+node_modules/
+dist/
+build/
+target/
+.gradle/
 
-# Django
-db.sqlite3
-staticfiles/
-media/
-
-# Environment variables (никогда не коммитить!)
-.env
-*/.env
-
-# Docker
+# Logs and temp files
 *.log
-
-# IDE
-.idea/
-.vscode/
+*.tmp
 *.swp
 *.swo
 
-# OS
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
 .DS_Store
 Thumbs.db
 
-# Replit internal
-.replit
-replit.nix
-.upm/
-.cache/
-.pythonlibs/
-uv.lock
-zipFile.zip
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.mypy_cache/
